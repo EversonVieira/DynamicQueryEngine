@@ -16,13 +16,13 @@ namespace DynamicQueryEngine.Core.DataSet.Serialization
                     Name = f.Name, 
                     Type = f.Type.ToString() 
                 }).ToList(),
-                Relations = dataSet.Relations.Select(r => new RelationDefinition
+                Relations = dataSet.Joins.Select(r => new RelationDefinition
                 {
                     SourceTable = r.SourceTable,
                     JoinedTable = r.JoinedTable,
                     SourceField = r.SourceField,
                     JoinedField = r.JoinedField,
-                    Type = r.Type.ToString()
+                    Type = r.JoinType.ToString()
                 }).ToList(),
                 WhereClauses = dataSet.WhereClauses.Select(w => new WhereDefinition
                 {

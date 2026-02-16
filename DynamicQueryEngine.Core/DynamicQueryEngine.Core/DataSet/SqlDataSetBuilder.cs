@@ -14,13 +14,13 @@ namespace DynamicQueryEngine.Core.DataSet
     {
         private string? _mainTable;
         private List<SqlDataSetField> _fields = [];
-        private List<SqlDataSetTableRelation> _relations = [];
         private ISqlDataSetCache? _cache;
         private TimeSpan? _timeSpan;
         private SqlDataSetBuilderConfig _config;
         private ISqlDialectAdapter? _dialectAdapter;
         private List<WhereClause> _whereClauses = [];
         private List<AdvancedWhereClause> _advancedWhereClauses = [];
+        private List<SubQueryWhereClause> _subQueryWhereClauses = [];
         private List<GroupByClause> _groupByClauses = [];
         private List<HavingClause> _havingClauses = [];
         private List<OrderByClause> _orderByClauses = [];
@@ -73,8 +73,9 @@ namespace DynamicQueryEngine.Core.DataSet
 
             _dialectAdapter ??= new PostgresSqlDialectAdapter();
 
-            return new SqlDataSet(_fields, _mainTable!, _relations, _cache, _timeSpan, _dialectAdapter, _whereClauses, _advancedWhereClauses, _groupByClauses, _havingClauses, _orderByClauses, _limitOffset, _joins, _subQueries, _isDistinct, _aggreageFunctions);
+            return new SqlDataSet(_fields, _mainTable!, _cache, _timeSpan, _dialectAdapter, _whereClauses, _advancedWhereClauses, _subQueryWhereClauses, _groupByClauses, _havingClauses, _orderByClauses, _limitOffset, _joins, _subQueries, _isDistinct, _aggreageFunctions);
         }
+
 
         public ISqlDataSetBuilder WithCacheExpiration(TimeSpan timeSpan)
         {
@@ -111,38 +112,6 @@ namespace DynamicQueryEngine.Core.DataSet
                 throw new DynamicQueryEngineException("Main table is already set.");
 
             _mainTable = mainTable;
-            return this;
-        }
-
-        public ISqlDataSetBuilder WithRelation(string sourceTable, string joinedTable, string sourceField, string joinedField, SqlDataSetTableRelationType type)
-        {
-            StringBuilder sb = new StringBuilder();
-            if (string.IsNullOrWhiteSpace(sourceField))
-            {
-                sb.AppendLine("Source field is required.");
-            }
-
-            if (string.IsNullOrWhiteSpace(joinedField))
-            {
-                sb.AppendLine("Joined field is required.");
-            }
-
-            if (string.IsNullOrWhiteSpace(sourceTable))
-            {
-                sb.AppendLine("Source table is required.");
-            }
-
-            if (string.IsNullOrWhiteSpace(joinedTable))
-            {
-                sb.AppendLine("Joined table is required.");
-            }
-
-            if (sb.Length > 0)
-            {
-                throw new DynamicQueryEngineException(sb.ToString());
-            }
-
-            _relations.Add(new SqlDataSetTableRelation(sourceTable, joinedTable, sourceField, joinedField, type));
             return this;
         }
 
@@ -296,6 +265,15 @@ namespace DynamicQueryEngine.Core.DataSet
         {
             var tempDataSet = Build();
             return tempDataSet.GetComplexityReport();
+        }
+
+        public ISqlDataSetBuilder WithSubQueryWhere(string? tableName, string? fieldName, SubQueryOperator op, SqlDataSet subQuery)
+        {
+            if (subQuery == null)
+                throw new DynamicQueryEngineArgumentNullException(nameof(subQuery));
+
+            _subQueryWhereClauses.Add(new SubQueryWhereClause(tableName, fieldName, op, subQuery));
+            return this;
         }
     }
 }

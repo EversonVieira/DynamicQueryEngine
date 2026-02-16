@@ -13,13 +13,13 @@ namespace DynamicQueryEngine.Core.DataSet
     {
         public List<SqlDataSetField> Fields { get; init; }
         public string MainTable { get; init; }
-        public List<SqlDataSetTableRelation> Relations { get; init; }
         public string Id { get; private set; }
         public ISqlDataSetCache? Cache { get; init; }
         public TimeSpan? TimeSpan { get; init; }
         public ISqlDialectAdapter DialectAdapter { get; init; }
         public List<WhereClause> WhereClauses { get; init; } = [];
         public List<AdvancedWhereClause> AdvancedWhereClauses { get; init; } = [];
+        public List<SubQueryWhereClause> SubQueryWhereClauses { get; init; } = [];
         public List<GroupByClause> GroupByClauses { get; init; } = [];
         public List<HavingClause> HavingClauses { get; init; } = [];
         public List<OrderByClause> OrderByClauses { get; init; } = [];
@@ -32,12 +32,13 @@ namespace DynamicQueryEngine.Core.DataSet
 
         internal SqlDataSet(List<SqlDataSetField> fields,
                             string mainTable,
-                            List<SqlDataSetTableRelation> relations,
+
                             ISqlDataSetCache? cache,
                             TimeSpan? timeSpan,
                             ISqlDialectAdapter dialectAdapter,
                             List<WhereClause>? whereClauses = null,
                             List<AdvancedWhereClause>? advancedWhereClauses = null,
+                            List<SubQueryWhereClause>? subQueryWhereClauses = null,
                             List<GroupByClause>? groupByClauses = null,
                             List<HavingClause>? havingClauses = null,
                             List<OrderByClause>? orderByClauses = null,
@@ -49,12 +50,12 @@ namespace DynamicQueryEngine.Core.DataSet
         {
             Fields = fields;
             MainTable = mainTable;
-            Relations = relations;
             Cache = cache;
             TimeSpan = timeSpan;
             DialectAdapter = dialectAdapter;
             WhereClauses = whereClauses ?? [];
             AdvancedWhereClauses = advancedWhereClauses ?? [];
+            SubQueryWhereClauses = subQueryWhereClauses ?? [];
             GroupByClauses = groupByClauses ?? [];
             HavingClauses = havingClauses ?? [];
             OrderByClauses = orderByClauses ?? [];
@@ -79,7 +80,7 @@ namespace DynamicQueryEngine.Core.DataSet
                 sb.Append(field.TableName.ToLowerInvariant());
             }
 
-            foreach (var relation in Relations.OrderBy(r => r.SourceTable, StringComparer.OrdinalIgnoreCase).ThenBy(r => r.JoinedTable, StringComparer.OrdinalIgnoreCase))
+            foreach (var relation in Joins.OrderBy(r => r.SourceTable, StringComparer.OrdinalIgnoreCase).ThenBy(r => r.JoinedTable, StringComparer.OrdinalIgnoreCase))
             {
                 sb.Append(relation.SourceTable.ToLowerInvariant());
                 sb.Append(relation.SourceField.ToLowerInvariant());

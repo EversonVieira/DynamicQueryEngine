@@ -39,7 +39,6 @@ namespace DynamicQueryEngine.Core.DataSet.Adapters
             LimitOffsetClause? limitOffset = null)
         {
             var tables = new List<string> { dataSet.MainTable };
-            tables.AddRange(dataSet.Relations.Select(r => r.JoinedTable).Distinct());
             tables.AddRange(dataSet.Joins.Select(j => j.JoinedTable).Distinct());
 
             var tableAliases = new Dictionary<string, string>();
@@ -63,12 +62,6 @@ namespace DynamicQueryEngine.Core.DataSet.Adapters
 
             sb.AppendLine(string.Join(",\n    ", selectFields));
             sb.AppendLine($"FROM [{dataSet.MainTable}] [{tableAliases[dataSet.MainTable]}]");
-
-            foreach (var relation in dataSet.Relations)
-            {
-                sb.AppendLine($"JOIN [{relation.JoinedTable}] [{tableAliases[relation.JoinedTable]}] ON");
-                sb.AppendLine($"    [{tableAliases[relation.SourceTable]}].[{relation.SourceField}] = [{tableAliases[relation.JoinedTable]}].[{relation.JoinedField}]");
-            }
 
             foreach (var join in dataSet.Joins)
             {
@@ -95,6 +88,11 @@ namespace DynamicQueryEngine.Core.DataSet.Adapters
             if (dataSet.AdvancedWhereClauses.Any())
             {
                 allWhereClauses.AddRange(dataSet.AdvancedWhereClauses.Select(w => FormatAdvancedWhereClause(w, tableAliases)));
+            }
+
+            if (dataSet.SubQueryWhereClauses.Any())
+            {
+                allWhereClauses.AddRange(dataSet.SubQueryWhereClauses.Select(w => FormatSubQueryWhereClause(w, tableAliases)));
             }
 
             if (allWhereClauses.Any())
@@ -154,8 +152,8 @@ namespace DynamicQueryEngine.Core.DataSet.Adapters
                 WhereOperator.GreaterOrEqual => $"[{tableAliases[clause.TableName]}].[{clause.FieldName}] >= {FormatValue(clause.Value)}",
                 WhereOperator.LessThan => $"[{tableAliases[clause.TableName]}].[{clause.FieldName}] < {FormatValue(clause.Value)}",
                 WhereOperator.LessOrEqual => $"[{tableAliases[clause.TableName]}].[{clause.FieldName}] <= {FormatValue(clause.Value)}",
-                WhereOperator.Like => $"[{tableAliases[clause.TableName]}].[{clause.FieldName}] LIKE '%{clause.Value}%'",
-                WhereOperator.NotLike => $"[{tableAliases[clause.TableName]}].[{clause.FieldName}] NOT LIKE '%{clause.Value}%'",
+                WhereOperator.Like => $"[{tableAliases[clause.TableName]}].[{clause.FieldName}] LIKE {FormatLikeValue(clause.Value)}",
+                WhereOperator.NotLike => $"[{tableAliases[clause.TableName]}].[{clause.FieldName}] NOT LIKE {FormatLikeValue(clause.Value)}",
                 WhereOperator.In => $"[{tableAliases[clause.TableName]}].[{clause.FieldName}] IN ({FormatInValues(clause.Value)})",
                 WhereOperator.NotIn => $"[{tableAliases[clause.TableName]}].[{clause.FieldName}] NOT IN ({FormatInValues(clause.Value)})",
                 WhereOperator.Between => $"[{tableAliases[clause.TableName]}].[{clause.FieldName}] BETWEEN {FormatValue(clause.Value)} AND {FormatValue(clause.ValueEnd)}",
@@ -165,18 +163,59 @@ namespace DynamicQueryEngine.Core.DataSet.Adapters
             };
         }
 
+        private string FormatLikeValue(object? value)
+        {
+            if (value == null) return "NULL";
+            if (value is string str)
+            {
+                var escaped = EscapeSqlString(str);
+                return $"'%{escaped}%'";
+            }
+            return value.ToString()!;
+        }
+
         private string FormatValue(object? value)
         {
             if (value == null) return "NULL";
-            if (value is string) return $"'{value}'";
+            if (value is string str) return $"'{EscapeSqlString(str)}'";
             return value.ToString()!;
+        }
+
+        private string EscapeSqlString(string value)
+        {
+            return value.Replace("'", "''");
+        }
+
+        private string FormatSubQueryWhereClause(SubQueryWhereClause clause, Dictionary<string, string> tableAliases)
+        {
+            var subQuerySql = clause.SubQuery.GetSqlQuery().Trim();
+
+            return clause.Operator switch
+            {
+                SubQueryOperator.In => $"[{tableAliases[clause.TableName]}].[{clause.FieldName}] IN ({subQuerySql})",
+                SubQueryOperator.NotIn => $"[{tableAliases[clause.TableName]}].[{clause.FieldName}] NOT IN ({subQuerySql})",
+                SubQueryOperator.Exists => $"EXISTS ({subQuerySql})",
+                SubQueryOperator.NotExists => $"NOT EXISTS ({subQuerySql})",
+                SubQueryOperator.GreaterThan => $"[{tableAliases[clause.TableName]}].[{clause.FieldName}] > ({subQuerySql})",
+                SubQueryOperator.GreaterOrEqual => $"[{tableAliases[clause.TableName]}].[{clause.FieldName}] >= ({subQuerySql})",
+                SubQueryOperator.LessThan => $"[{tableAliases[clause.TableName]}].[{clause.FieldName}] < ({subQuerySql})",
+                SubQueryOperator.LessOrEqual => $"[{tableAliases[clause.TableName]}].[{clause.FieldName}] <= ({subQuerySql})",
+                SubQueryOperator.Equal => $"[{tableAliases[clause.TableName]}].[{clause.FieldName}] = ({subQuerySql})",
+                SubQueryOperator.NotEqual => $"[{tableAliases[clause.TableName]}].[{clause.FieldName}] != ({subQuerySql})",
+                _ => throw new ArgumentException($"SubQueryOperator {clause.Operator} not supported.")
+            };
         }
 
         private string FormatInValues(object? values)
         {
             if (values is System.Collections.IEnumerable enumerable && !(values is string))
             {
-                var parts = enumerable.Cast<object>().Select(v => v is string ? $"'{v}'" : v.ToString());
+                var parts = enumerable.Cast<object>().Select(v => 
+                {
+                    if (v is string str)
+                        return $"'{EscapeSqlString(str)}'";
+                    return v.ToString()!;
+                });
                 return string.Join(", ", parts);
             }
             return FormatValue(values);

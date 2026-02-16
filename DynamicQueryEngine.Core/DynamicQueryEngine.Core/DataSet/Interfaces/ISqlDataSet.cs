@@ -9,13 +9,13 @@ namespace DynamicQueryEngine.Core.DataSet.Interfaces
     {
         public List<SqlDataSetField> Fields { get; init; }
         public string MainTable { get; init; }
-        public List<SqlDataSetTableRelation> Relations { get; init; }
         public string Id { get; }
         public ISqlDataSetCache? Cache { get; init; }
         public TimeSpan? TimeSpan { get; init;  }
         public ISqlDialectAdapter DialectAdapter { get; init; }
         public List<WhereClause> WhereClauses { get; init; }
         public List<AdvancedWhereClause> AdvancedWhereClauses { get; init; }
+        public List<SubQueryWhereClause> SubQueryWhereClauses { get; init; }
         public List<GroupByClause> GroupByClauses { get; init; }
         public List<HavingClause> HavingClauses { get; init; }
         public List<OrderByClause> OrderByClauses { get; init; }
