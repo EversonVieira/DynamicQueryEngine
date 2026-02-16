@@ -9,7 +9,20 @@ namespace DynamicQueryEngine.Core.DataSet.Interfaces
                                           ISqlDataSetBuilderWithRelationsSyntax,
                                           ISqlDataSetBuilderWithMemoryCacheSyntax,
                                           ISqlDataSetBuilderWithExternalCache,
-                                          ISqlDataSetBuilderWithCacheExpiration
+                                          ISqlDataSetBuilderWithCacheExpiration,
+                                          ISqlDataSetBuilderWithDialectSyntax,
+                                          ISqlDataSetBuilderWithWhereSyntax,
+                                          ISqlDataSetBuilderWithAdvancedWhereSyntax,
+                                          ISqlDataSetBuilderWithGroupBySyntax,
+                                          ISqlDataSetBuilderWithHavingSyntax,
+                                          ISqlDataSetBuilderWithOrderBySyntax,
+                                          ISqlDataSetBuilderWithLimitOffsetSyntax,
+                                          ISqlDataSetBuilderWithJoinSyntax,
+                                          ISqlDataSetBuilderWithSubQuerySyntax,
+                                          ISqlDataSetBuilderWithValidationSyntax,
+                                          ISqlDataSetBuilderWithJsonExportSyntax,
+                                          ISqlDataSetBuilderWithDistinctSyntax,
+                                          ISqlDataSetBuilderWithAggregateFunctionSyntax
     {
         ISqlDataSet Build();
     }

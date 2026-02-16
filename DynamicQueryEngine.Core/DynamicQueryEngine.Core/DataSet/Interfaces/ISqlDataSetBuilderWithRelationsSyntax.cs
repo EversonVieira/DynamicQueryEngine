@@ -19,4 +19,16 @@
     {
         ISqlDataSetBuilder WithCacheExpiration(TimeSpan timeSpan);
     }
+
+    public interface ISqlDataSetBuilderWithView
+    {
+        ISqlDataSetBuilder WithView(string viewName);
+    }
+
+    public interface ISqlDataSetBuilderWithMaterializedView
+    {
+        ISqlDataSetBuilder WithMaterializedView(string viewName, TimeSpan? timeSpan);
+    }
+
+
 }
