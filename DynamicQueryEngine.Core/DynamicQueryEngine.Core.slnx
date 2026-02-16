@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="../DyanmicQueryEngine.Sandbox/DyanmicQueryEngine.Sandbox.csproj" />
+  <Project Path="DynamicQueryEngine.Core/DynamicQueryEngine.Core.csproj" />
+</Solution>
